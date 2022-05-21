@@ -58,7 +58,13 @@ if(outputExpr == F){
 
 if(addn == T){
 
-  output <- expr(!!output %>% addn(col = !!x))
+  # output <- expr(!!output %>% addn(col = !!x))
+
+  output <- expr(!!output %>%
+                   group_by(!!x) %>%
+                   mutate(!!x := paste0(!!x, "\n(n=", length(!!x), ")"))
+                   )
+
 
 }
 
@@ -136,6 +142,10 @@ if(statTest == T){
 
       dftemp <- dftemp %>%
         addn(col = !!x)
+
+
+
+
 
     }
 

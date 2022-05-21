@@ -22,6 +22,9 @@
 # dataset <- mtcars
 # col = expr(carb)
 
+
+#note ridiculously long, in fact possible to do group_by(cov) %>% mutate(cov = paste0(cov, length(cov))) ...
+
 addn <- function(dataset, col, ...){
 
   col <- enexpr(col)
