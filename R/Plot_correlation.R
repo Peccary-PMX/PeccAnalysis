@@ -4,13 +4,14 @@
 #' @export
 #'
 
-
+#
 # readt("file:///D:/these/Pecc_test/1_Data/3_final/main_dataset_extended3_20_12_02.data") %>%
 #   filter(YTYPE == 1, NMID2 > 200) %>%
 #   peccary_NCA(timecol =  TIME_NEG_A,obscol =  DV2, NMID2, AGE)  -> df
-#
+# #
 # x <- expr(AGE)
 # y <- exprs(Cmax, Cmin)
+# plot_correlation(outputExpr = F, df, AGE, Cmax)
 # output <- expr(df)
 # outputExpr = F
 # wrapscale = "free"
@@ -60,19 +61,17 @@ output <-   expr(!!output %>%
   expr(
 
   !!output %>%
-       ggscatter(x = !!deparse(x), y = !!deparse(y), add = add, cor.coef = cor.coef, cor.method =  cor.method,  conf.int = conf.int)+
+       ggscatter(x = !!deparse(x), y = !!deparse(y), add = !!add, cor.coef = !!cor.coef, cor.method =  !!cor.method,  conf.int = !!conf.int)+
     theme_bw()
 
-     ) %>%
-    eval
-
+     )
 
 # Facet wrap
 # print(colwrap)
 if(multiy == T){
 
  output <-  expr(!!output+
-         facet_wrap(~key, scales = wrapscale))
+         facet_wrap(~key, scales = !!wrapscale))
 
 }
 
@@ -80,7 +79,7 @@ if(!is.na(colwrap) & multiy == F){
 
 
   output <-  expr(!!output+
-                    facet_wrap(~ !!colwrap, scales = wrapscale))
+                    facet_wrap(~ !!colwrap, scales = !!wrapscale))
 
 }
 

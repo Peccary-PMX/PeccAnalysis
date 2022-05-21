@@ -107,7 +107,7 @@ if(addPoints == T){
 if(multiy == T){
 
  output <-  expr(!!output+
-         facet_wrap(~key, scales = wrapscale))
+         facet_wrap(~key, scales = !!wrapscale))
 
 }
 
@@ -115,7 +115,7 @@ if(!is.na(colwrap) & multiy == F){
 
 
   output <-  expr(!!output+
-                    facet_wrap(~ !!colwrap, scales = wrapscale))
+                    facet_wrap(~ !!colwrap, scales = !!wrapscale))
 
 }
 
