@@ -403,6 +403,11 @@ plot_spagh <- function(df, x = "TIME", y = "DV", group = "", col ="", shape = ""
 
     return(plot)
 
+  }else if(output == "Both"){
+
+    print(plot)
+    return(eval(plot))
+
   }else{
 
 

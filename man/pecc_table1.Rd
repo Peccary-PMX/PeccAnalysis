@@ -42,7 +42,6 @@ pecc_table1(mtcars, rowl = c("mpg_cont", "gear_cont", "gear_cat"), coll = "cyl")
 pecc_table1(Theoph, rowl = c("Wt_cont", "Dose_cont"))
 
 # after rowl parameter, you can add all ID columns you want in "..." to extract one line per patient:
-pecc_table1(Theoph, rowl = c("Wt_cont", "Dose_cont"), Subject )
 }
 \author{
 Thibaud Derippe (\email{Thibaud.Derippe@gmail.com})

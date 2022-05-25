@@ -9,24 +9,30 @@ peccary_NCA(
   timecol,
   obscol,
   ...,
-  BLQcol = 0,
+  evidcol = NULL,
+  BLQcol = NULL,
   auc_0_X = 0,
   filter = "",
   keepcov = T,
   plotQC = F,
-  outputExpr = F
+  outputExpr = F,
+  IVbackextr = F,
+  add_Obs0_Time0 = F,
+  nIVback = 2
 )
 }
 \arguments{
 \item{dataset}{Dataset to analyze}
 
-\item{timecol}{The name (unquoted) of the time column}
+\item{timecol}{The name (unquoted) of the time column. Mandatory.}
 
-\item{obscol}{The name  (unquoted) of the observation column}
+\item{obscol}{The name  (unquoted) of the observation column. Mandatory.}
 
 \item{...}{All the names (unquoted) of the grouping column (ID, YTYPE, nAdmin, any covariate....).}
 
-\item{BLQcol}{Does not work properly yet}
+\item{evidcol}{The name  (unquoted) of the evid column. Optional. Only line with evidcol = 0 will be kept}
+
+\item{BLQcol}{The name  (unquoted) of the evid column. Optional. BLQ values are replaced by 0.}
 
 \item{auc_0_X}{Numeric input. Compute AUC from time 0 to time auc_0_X}
 
@@ -37,15 +43,18 @@ peccary_NCA(
 \item{plotQC}{Boolean. If T, create plots to control the output  (default = F)}
 
 \item{outputExpr}{Boolean. If F (default) returns directly NCA results. If T, return R code instead.}
+
+\item{IVbackextr}{Boolean. If T, compute C0 based on the first nIVback points.}
+
+\item{add_Obs0_Time0}{Boolean. If T, add observation 0 at times 0 for all patients. Usefull in case of non intravscular administration(default = F)}
+
+\item{nIVback}{Numeric input. Number of point used for the backextrapolation. Default 2 as in PKAnalix}
 }
 \description{
 \code{peccary_NCA} compute basic NCA analysis (no extrapolation)
 }
 \examples{
-peccary_NCA(Theoph,Time,conc, Subject, auc_0_X = 12, filter = Subject \%in\% 1:5, plotQC = T)
-
 # To get the Peccary-independant code, add outputExpr = T
-peccary_NCA( outputExpr = T, Theoph,Time,conc, Subject, auc_0_X = 12, filter = Subject \%in\% 1:5, plotQC = T)
 }
 \author{
 Thibaud Derippe (\email{Thibaud.Derippe@gmail.com})

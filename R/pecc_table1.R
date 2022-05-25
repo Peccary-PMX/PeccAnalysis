@@ -224,325 +224,134 @@ temp <- map_dfr(temp, function(x){
 
 # Version metaprogrammé en préparation ------------------------------------
 
+# pecc_table1(mtcars, ..., rowl = c("mpg_cont", "gear_cont", "gear_cat"), col1 = NA, col2 = NA)
 
-# dataset = mtcars
-# rowl = c("mpg", "cyl")
-# coll = "gear"
-# NArp = " "
-# geomMean = F
-# na.rm = T
-# round = 1
-# nmaxcat = 5
-# pecc_table1 <- function(dataset, rowl = c("SEX", "AGE"), coll = "", NArp = " ", geomMean = F,  na.rm = T, round = 1, nmaxcat = 5, expr = F){
-#   #
-#
-#
-#   if(expr == F){
-#     # dataframe_origin <- expr(df)
-#     dataset_expr <- expr(dataset <- !!expr(dataset))
-#   }else{
-#
-#     dataset_expr <- expr(dataset <- !!substitute(dataset))
-#   }
-#
-#
-#
-#   if(coll == "" | is.na(coll)){
-#
-#     dataset_expr <- expr(!!dataset_expr  %>%
-#                            mutate(All = "All"))
-#
-#
-#     dataset$All <- "All"
-#     coll <- "All"
-#
-#
-#   }
-#
-# # If user does not mention wehter it's continuous our categorical, guess for him
-# for(a in rowl[!grepl("(_cont)|(_cat)", rowl)]){
-#
-#   test <- length(unique(dataset[[a]]))
-#
-#   if(test <= nmaxcat){
-#     rowl[rowl == a] <- paste0(a, "_cat")
-#   }else{
-#
-#     rowl[rowl == a] <- paste0(a, "_cont")
-#   }
-# }
-#
-#
-#
-# # Categorical function ----------------------------------------------------
-#
-#
-# cat_fun <-   expr(function(row,col){
-#
-#     temp <- dataset
-#
-#
-#     names(temp)[names(temp) == gsub("_cat", "", row )] <- "rowforpecc"
-#     names(temp)[names(temp) == col] <- "colforpecc"
-#     temp$rowforpecc[is.na(temp$rowforpecc)] <- "Missing"
-#
-#    # Compute for each subgroup
-#     temp %>%
-#       group_by(rowforpecc, colforpecc) %>%
-#       tally %>%
-#       spread(key = colforpecc, value = n) %>%
-#       map_dfr(function(x){
-#
-#         x[is.na(x)] <- 0
-#         x
-#
-#       }) -> temp
-#
-#     # Add Overall sum
-#     temp$Overall <- map_dbl(1:nrow(temp), ~   sum(temp[.x, -1]))
-#
-#     # Statistiques
-#     for(a in 2:length(temp)){
-#
-#       sum(temp[[a]]) -> sumcol
-#       temp[[a]] <- paste0(temp[[a]], " (", round(temp[[a]]  * 100 / sumcol, 1), "%)")
-#     }
-#
-#
-#     temp$rowforpecc <- as.character(temp$rowforpecc)
-#
-#
-#     bind_rows(tibble(rowforpecc = gsub("_cat", "", row )), temp, tibble(rowforpecc = NA))
-#
-#
-#
-#     # namesss <- as.character(unique(dataset[[coll]]))
-#     # namesss <- namesss[order(namesss)]
-#     # temp <- temp[c("Cov",namesss , "Overall")]
-#
-#
-# })
-#
-#
-# # eval(cat_fun)(row = "cyl",col = "gear")
-#
-#
-#
-# # Continuous function -----------------------------------------------------
-#
-#
-# # Arithmetic of geometric Mean?
-# if(geomMean == F) {
-#   meanfunc <- expr(mean(rowforpecc, na.rm =  !!na.rm))
-#   sdfunc <- expr(sd(rowforpecc, na.rm =  !!na.rm))
-# }else{
-#   meanfunc <- expr(exp(mean(log(rowforpecc), na.rm =  !!na.rm)))
-#   sdfunc <- expr(exp(sd(log(rowforpecc), na.rm =  !!na.rm)))
-#
-#   }
-#
-# cont_fun <-expr(function(row,col){
-#
-#
-#   temp <-  dataset
-#
-#
-#   names(temp)[names(temp) == gsub("_cont", "", row )] <- "rowforpecc"
-#   names(temp)[names(temp) == col] <- "colforpecc"
-#
-#
-#
-#
-#   temp %>%
-#          mutate(colforpecc = as.character(colforpecc)) %>%
-#          bind_rows(temp %>% mutate(colforpecc = "Overall")) %>%
-#          group_by(colforpecc) %>%
-#          summarise(median = median(rowforpecc, na.rm =  !!na.rm),
-#                    mean = !!meanfunc,
-#                    sd = !!sdfunc,
-#                    min = min(rowforpecc, na.rm =  !!na.rm),
-#                    max = max(rowforpecc, na.rm =  !!na.rm)) %>%
-#          mutate(`Mean (SD)` = paste0(round(mean,!!round), " (", round(sd,2),")")) %>%
-#          mutate(`Median [Min;Max]` = paste0(round(median,!!round), " [", round(min,!!round),";",round(max,!!round),"]")) %>%
-#          select(-median, - mean, -sd, -min, -max) %>%
-#          gather(-colforpecc, key= "rowforpecc", value = "value") %>%
-#          spread(key = colforpecc, value = value) -> temp
-#
-#          bind_rows(tibble(rowforpecc = gsub("_cont", "", row )), temp, tibble(rowforpecc = NA))
-#
-#
-# })
-#
-#
-# # eval(cont_fun)(row = "mpg",col = "gear")
-#
-#
-# # Final function ----------------------------------------------------------
-#
-# # if only cat data
-# # rowl <- c( "cyl_cat" , "am_cat")
-# if(sum(grepl("_cont", rowl)) == 0 ){
-#
-#   expr({crossing(row = !!rowl, col = !!coll ) %>%
-#          mutate(percov = map2(row, col,!!cat_fun)) %>%
-#          pull(percov) %>%
-#          bind_rows()%>%
-#          map_dfr( function(x){
-#
-#            x[is.na(x)] <- !!NArp
-#            x
-#
-#          }) %>%
-#          rename(!!col := rowforpecc) -> table1
-#
-#
-#     dataset %>%
-#       group_by(!!parse_expr(col)) %>%
-#       tally %>%
-#       pull(n) -> nn
-#
-#     names(table1)[-1] <- paste0(  names(table1)[-1], " (n=",c(nn, sum(nn)), ")" )
-#
-#     table1
-#
-#
-#
-#       } ) -> res
-# # eval(test)
-#
-# }else if(sum(grepl("_cat", rowl)) == 0 ){
-#
-# # if only cont
-#
-#   # rowl <- c("mpg_cont", "disp_cont" )
-#   expr({crossing(row = !!rowl, col = !!coll ) %>%
-#          mutate(percov = map2(row, col,!!cont_fun)) %>%
-#          pull(percov) %>%
-#          bind_rows()%>%
-#          map_dfr( function(x){
-#
-#            x[is.na(x)] <- !!NArp
-#            x
-#
-#          })  %>%
-#          rename(!!parse_expr(coll) := rowforpecc)-> table1
-#
-#
-#        dataset %>%
-#          group_by(!!parse_expr(col)) %>%
-#          tally %>%
-#          pull(n) -> nn
-#
-#        names(table1)[-1] <- paste0(  names(table1)[-1], " (n=",c(nn, sum(nn)), ")" )
-#
-#        table1
-#
-#
-#   }) -> res
-#   # eval(test)
-#
-# }else{
-#
-# # ICI ---------------------------------------------------------------------
-#
-#
-#  # if both
-#   # rowl <- c( "mpg_cont" , "am_cat")
-#
-#
-#
-#   expr({cont_fun <- !!cont_fun
-#   cat_fun <- !!cat_fun
-#
-#
-#
-#   crossing(row = !!rowl, col = !!coll ) %>%
-#     mutate(percov = map2(row, col,function(row, col){
-#
-#       if(grepl("_cat", row)) return(cat_fun(row,col))
-#
-#       return( cont_fun(row,col) )
-#
-#     })) %>%
-#     pull(percov) %>%
-#     bind_rows() %>%
-#     map_dfr( function(x){
-#
-#       x[is.na(x)] <- !!NArp
-#       x
-#
-#     }) %>%
-#     rename(!!parse_expr(coll) := rowforpecc) -> table1
-#
-#   dataset %>%
-#     group_by(!!parse_expr(coll)) %>%
-#     tally %>%
-#     pull(n) -> nn
-#
-#   names(table1)[-1] <- paste0(  names(table1)[-1], " (n=",c(nn, sum(nn)), ")" )
-#
-#
-#
-#
-#   table1
-#
-#     }) -> res
-#
-#
-#
-# }
-#
-# if(coll == "All"){
-#
-#
-#
-#
-#   if(expr == F){
-#     # dataframe_origin <- expr(df)
-#
-#     return(eval(expr({!!dataset_expr
-#       table1 <- !!res
-#
-#       table1 %>% {.[-2]}} %>%
-#         rename(` ` = All))))
-#   }else{
-#
-#
-#     return(expr({!!dataset_expr
-#       table1 <- !!res
-#
-#       table1 %>% {.[-2]}} %>%
-#         rename(` ` = All)))
-#   }
-#
-#
-#
-#
-#
-# }
-#
-#
-# if(expr == F){
-#   # dataframe_origin <- expr(df)
-#
-#   return(eval(expr({!!dataset_expr
-#     !!res})))
-# }else{
-#
-#
-#   return(expr({!!dataset_expr
-#     !!res}))
-# }
-#
-#
-#
-# }
+#' @export
 
-# if(coll == "All"){
-#
-#   names(temp)[1] <- "Table1"
-#   temp <- temp[-3]
-# }
+pecc_table1_original <- function(df, ..., col1 = NA, col2 = NA,  reduceBy = NA,  outputExpr = F){
+
+  if(outputExpr == F){
+    output <- expr(df)
+  }else{
+
+    output <- substitute(df)
+  }
+
+  reduceBy <- enexpr(reduceBy)
+  col1 <- enexpr(col1)
+  col2 <- enexpr(col2)
+
+if(!is.na(reduceBy)){
+
+  reduceBy <-  str_split(deparse(reduceBy), pattern = " *\\+ *" )[[1]] %>%
+    parse_exprs
+
+  output <- expr(pecc_search_cov(dataset = df,!!!reduceBy, returnExp = T)) %>%
+    eval %>%
+    deparse() %>%
+    gsub(pattern = "^df", replacement = deparse(output))
+
+  output <- parse_expr(output)
+
+}
+
+rowl <- enexprs(...)
+
+
+if(length(rowl) == 0){
+
+  if(!is.na(reduceBy)){
+    rowl <-  expr(pecc_search_cov(dataset = df,!!!reduceBy, returnExp = F)) %>%
+      eval %>%
+      names
+
+
+  }else{
+
+    rowl <- df %>% names
+
+  }
+
+  torem <- c(deparse(col1),deparse(col2), map_chr(reduceBy, ~deparse(.x)))
+  torem <- torem[-which(torem == "NA")]
+if(length(torem) > 0)  rowl <- rowl[- which(rowl %in% torem)]
+
+}else{
+
+  rowl <- map_chr(rowl, ~ deparse(.x))
+
+}
+
+
+listmodif <- list()
+
+# see if modification needed
+  for(a in rowl){
+
+   iscont <- grepl("_cont$", a)
+   iscat <- grepl("_cat$", a)
+
+   if(iscont |iscat){
+     namevar <- gsub("(_cont$)|(_cat$)", "", a)
+
+
+     if(iscont & !is.numeric(df[[namevar]])) listmodif[[namevar]] <- expr(as.numeric(!!parse_expr(namevar)))
+     if(iscat & is.numeric(df[[namevar]])) listmodif[[namevar]] <- expr(as.factor(!!parse_expr(namevar)))
+   }
+
+
+  }
 
 
 
+if(length(listmodif) > 0) output <- expr(!!output %>% mutate(!!!listmodif))
+
+inrows <- gsub("(_cont$)|(_cat$)", "", rowl)
+
+linetemp <- paste0(inrows, collapse = " + ")
+
+
+if(!is.na(col1)) linetemp <- paste0(linetemp, " | ", deparse(col1))
+if(!is.na(col2)) linetemp <- paste0(linetemp, " * ", deparse(col2))
+
+final_expr <- expr(table1::table1(~ !!parse_expr(linetemp), data = !!output))
+
+if(outputExpr == F){
+ return(eval(final_expr))
+}else if(outputExpr == "Both"){
+
+  print(final_expr)
+  return(eval(final_expr))
+}else{
+
+  return(final_expr)
+}
+
+
+}
+
+#
+# a %>%
+#   pecc_table1_original( outputExpr = F)
+#
+#
+# a <- read.table("D:/Peccary_Annexe/Exemple_demo/DATA/Theoph.txt", header = T, sep = ";")
+#
+# pecc_table1_original(a, c("cov", "doseCAT", "Dose"), coll = c("doseCAT"), outputExpr = F)
+#
+#
+# pecc_table1_original(df = a, col1 = doseCAT,reduceBy = ID, outputExpr = F)
+#
+#
+# pecc_table1_original(a)
+#
+# a %>%
+# pecc_table1_original(reduceBy = ID, outputExpr = F)
+#
+#
+# pecc_table1_original(df = a,   col1 = doseCAT,reduceBy = ID + Dose)
+#
+#
+# table1::table1(~cov + Dose | doseCAT, data = a)
+#
+#

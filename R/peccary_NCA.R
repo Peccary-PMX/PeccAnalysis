@@ -61,7 +61,7 @@ peccary_NCA <- function(dataset, timecol , obscol , ... , evidcol = NULL, BLQcol
 
   if(!is.null(evidcol)){
 
-    dataset2 <- expr(!!dataset2 %>% filte(!!evidcol := 0))
+    dataset2 <- expr(!!dataset2 %>% filter(!!evidcol == 0))
 
   }
 
@@ -247,27 +247,266 @@ if(outputExpr == T)return( NCAexpr)
 
 
 
+#'
+#' @export
 
-# ## Flow chart TAG4: add admin at 0 if not present (and no EVID column )
-#   if( eval(dataset) %>% group_split(!!!group) %>% map_dbl( ~ .x[[deparse(timecol)]][[1]]) %>% max != 0){
+peccar_pknca <- function(dataset,Time, conc, Subject, dose = NA, EVID = NA, AUC0_x = 0, computeMedian = T,  route = NA, rate = 0, duration = 0, option = NA, outputExpr = F){
+
+
+  if(outputExpr == F){
+    dataset2 <- expr(dataset)
+  }else{
+
+    dataset2 <- substitute(dataset)
+  }
+
+  Time <- enexpr(Time)
+  conc <- enexpr(conc)
+  Subject <- enexpr(Subject)
+  Subject_ind <- parse_exprs(str_split(deparse(Subject), pattern = " *\\+ *")[[1]])
+
+  dose <- enexpr(dose)
+  EVID <- enexpr(EVID)
+  option <- enexpr(option)
+  # Time = Time, conc = DV, Subject = Subject, dose = dose, ADM = EVID
+
+  # handle concentration dataset
+  conclist <- list()
+
+  print(Subject_ind)
+
+
+# hand evid
+
+if(is.na(EVID)){
+
+    conclist$data <-  expr(!!dataset2)
+
+  }else{
+
+    conclist$data <- expr(!!dataset2 %>%
+                            filter(!!EVID == 0))
+  }
+
+# handle median
+
+if(computeMedian == T){
+  conclist$data <- expr(!!conclist$data  %>%
+    group_by(!!!Subject_ind, !!Time) %>%
+    summarise(!!conc := median(!!conc))
+  )
+
+}
+
+
+
+
+  subject_formula <- Subject_ind[[1]]
+  if(length(Subject) > 1) subject_formula <- paste0(subject_formula, "/", paste0(Subject[-1], collapse = "+"))
+
+  conclist$formula <- expr(!!conc~!!Time|!!subject_formula)
+
+  # handle dose dataset
+  # if is na dose, just say dose 0 at time 0
+
+
+  doselist <- list()
+
+  if(is.na(EVID)){
+
+    doselist$data <- expr(!!dataset2 %>%
+                            group_by(!!!Subject) %>%
+                            slice(1) %>%
+                            mutate(!!Time:=0, !!conc:=0 )
+    )
+
+  }else{
+
+
+    doselist$data <- expr(!!dataset2 %>%
+                            filter(!!EVID == 1))
+
+
+
+  }
+
+
+  if(is.na(dose)){
+
+    doselist$data <- expr(!!doselist$data %>% mutate(dosenull = 0))
+    dose <- expr(dosenull)
+  }
+
+
+  doselist$formula <- expr( !!dose~!!Time|!!subject_formula)
+
+
+
+if(!is.na(route)){
+
+ doselist$route <- expr(!!route)
+
+ if(route == "intravascular" & rate != 0 ) doselist$rate <- expr(!!rate)
+ if(route == "intravascular" & duration != 0 ) doselist$duration <- expr(!!duration)
+}
+
+
+
+  if(is.na(deparse(dose))|deparse(dose) == "") dose <- "." # to create "one-sided (missing left side)"
+
+  # print("beginoption")
+  # optionslist <- list()
+  #
+  # optionslist$auc.method <- expr(!!isolate(input$pknca_auc.method))
+  # if(isolate(input$pknca_adj.r.squared.factor) != 0.0001) optionslist$adj.r.squared.factor <- expr(!!isolate(input$pknca_adj.r.squared.factor))
+  # if(isolate(input$pknca_max.missing)!= "drop") optionslist$max.missing <- expr(!!isolate(input$pknca_max.missing))
+  # if(isolate(input$pknca_conc.na)!= "drop") optionslist$conc.na <- expr(!!isolate(input$pknca_conc.na))
+  # if(isolate(input$pknca_first.tmax)!= T) optionslist$first.tmax <- expr(!!isolate(input$pknca_first.tmax))
+  # if(isolate(input$pknca_allow.tmax.in.half.life)!= F) optionslist$allow.tmax.in.half.life <- expr(!!isolate(input$pknca_allow.tmax.in.half.life))
+  # if(isolate(input$pknca_min.hl.points)!= 3) optionslist$min.hl.points <- expr(!!isolate(input$pknca_min.hl.points))
+  # if(isolate(input$pknca_min.span.ratio)!= 2) optionslist$min.span.ratio <- expr(!!isolate(input$pknca_min.span.ratio))
+  # if(isolate(input$pknca_max.aucinf.pext)!= 20) optionslist$max.aucinf.pext <- expr(!!isolate(input$pknca_max.aucinf.pext))
+  # if(isolate(input$pknca_min.hl.r.squared)!= 0.9) optionslist$min.hl.r.squared <- expr(!!isolate(input$pknca_min.hl.r.squared))
+  #
+
+  # gestion what to compute
+  if(is.na(AUC0_x)) AUC0_x <- 0
+  if( AUC0_x < 0 | !is.numeric(AUC0_x))  AUC0_x <- 0
+  if(AUC0_x == 0){
+
+    itvs <- expr(intervals_manual <- data.frame(start = 0, end = Inf, cmax = T, tmax = T, auclast = T,
+                                                aucinf.obs = T, cmin = T, tlast = T, vss.last = F, cl.obs = F))
+
+  }else{
+
+    itvs <- expr(intervals_manual <- data.frame(start=0, end=c(!!AUC0_x, Inf),
+                                               cmax=c(F, T),
+                                               tmax=c(F, T),
+                                               auclast=c(T, T),
+                                               aucinf.obs=c(F, T),
+                                               cmin = c(F, T), tlast = c(F, T),
+                                               vss.last = c(F, F), cl.obs  = c(F, F) )
+)
+
+  }
+
+
+  finallist<- list( expr(conc_obj), expr(dose_obj), intervals = expr(intervals_manual))
+
+  if(!is.na(option[[1]])) finallist$options <- expr(!!option)
+
+
+  NCA_expr <- expr(NCA_eval <- {
+    conc_obj <- PKNCAconc(!!!conclist)
+
+    dose_obj <- PKNCAdose(!!!doselist)
+
+    !!itvs
+
+    data_obj_automatic <-PKNCAdata(!!!finallist)
+
+    pk.nca(data_obj_automatic)
+
+  })
+
+
+  testtry <- try({
+    eval(NCA_expr)
+  })
+
+
+  if(AUC0_x == 0){
+  Indiv_table_expr <- expr( NCA_eval$result %>%
+                              select(!!!Subject_ind,PPTESTCD,  PPORRES) %>%
+                              distinct() %>% ## carefull with this distinct!
+                              spread(key = PPTESTCD, value = PPORRES))
+  }else{
+
+
+    Indiv_table_expr <- expr(
+
+      left_join(
+
+
+        NCA_eval$result %>% filter(end != !!AUC0_x) %>% select(ID, PPTESTCD, PPORRES, end) %>% distinct() %>%
+          spread(key = PPTESTCD, value = PPORRES),
+
+        NCA_eval$result %>%
+          filter(end == !!AUC0_x) %>%
+          select(ID, PPORRES) %>%
+          rename(!!parse_expr(paste0("AUC", AUC0_x)) := PPORRES)
+
+      )
+
+    )
+
+
+  }
+
+
+
+if(outputExpr == T){
+
+
+  return(list(NCA_expr, Indiv_table_expr))
+
+}else if(outputExpr == F){
+
+return(eval(Indiv_table_expr))
+
+}else{
+
+print(NCA_expr)
+print(Indiv_table_expr)
+return(eval(Indiv_table_expr))
+
+  }
+
+
+
+
+}
+
 #
-#     dataset2 <- expr(!!dataset2 %>%
-#                        group_split(!!!group) %>%
-#                        map(function(x){
-#
-#                          if(x[[!!deparse(timecol)]][[1]] > 0){
-#
-#                           return( x %>%
-#                              slice(1) %>%
-#                              mutate(!!obscol := 0, !!timecol := 0, !!evidcol :=1) %>%
-#                              bind_rows(x)
-#                           )}
-#
-#                          x
-#                        }) %>%
-#                        bind_rows()
-#
-#     )
+dataset <- read.table(file = "D:/Peccary_Annexe/Exemple_demo/DATA//Theoph.txt", header = T, na.strings = ".", sep = ";", dec = ".")
+# outputExpr = F
+# EVID = expr(EVID)
+# conc = expr(DV )
+# Subject = expr(ID)
+# Time = expr(TIME)
+# dose = expr(Dose)
+# route = "IV perf (rate)"
+# ratenumber = 0
 #
 #
-#   } ## end automatic adding time = 0
+# # with auc0_24
+#
+# peccar_pknca(dataset, Time = TIME, conc = DV, Subject = ID, AUC0_x = 0, outputExpr = "both")
+#
+#
+#
+# # without DOSE
+#
+# peccar_pknca(dataset, Time = TIME, conc = DV, Subject = ID)
+#
+# # without EVID
+#
+# peccar_pknca(dataset, Time = TIME, conc = DV, Subject = ID, dose = Dose)
+#
+# # With both
+#
+# peccar_pknca(dataset, Time = TIME, conc = DV, Subject = ID, dose = Dose, EVID = EVID, computeMedian = F)
+#
+# # With rate
+#
+# peccar_pknca(dataset, Time = TIME, conc = DV, Subject = ID, dose = Dose, EVID = EVID,route = "intravascular",rate = 2,
+#              computeMedian = F)
+#
+# # With
+#
+#
+# a <- peccar_pknca(dataset, Time = TIME, conc = DV, Subject = ID, dose = Dose, EVID = EVID )
+#
+# a
+#
+#
