@@ -179,9 +179,14 @@ output <- expr(!!output +  labs(x = !!deparse(x)) + theme_bw())
 
 if(outputExpr == F){
   return(eval(output))
-}else{
+}else if(outputExpr == T){
 
   return(output)
+}else{
+
+  print(output)
+  return(eval(output))
+
 }
 
 

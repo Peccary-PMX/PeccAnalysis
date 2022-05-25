@@ -250,7 +250,7 @@ if(outputExpr == T)return( NCAexpr)
 #'
 #' @export
 
-peccar_pknca <- function(dataset,Time, conc, Subject, dose = NA, EVID = NA, AUC0_x = 0, computeMedian = T,  route = NA, rate = 0, duration = 0, option = NA, outputExpr = F){
+peccary_pknca <- function(dataset,Time, conc, Subject, dose = NA, EVID = NA, AUC0_x = 0, computeMedian = T,  route = NA, rate = 0, duration = 0, option = NA, outputExpr = F){
 
 
   if(outputExpr == F){
@@ -268,12 +268,13 @@ peccar_pknca <- function(dataset,Time, conc, Subject, dose = NA, EVID = NA, AUC0
   dose <- enexpr(dose)
   EVID <- enexpr(EVID)
   option <- enexpr(option)
+  rate <- enexpr(rate)
+  duration <- enexpr(duration)
   # Time = Time, conc = DV, Subject = Subject, dose = dose, ADM = EVID
 
   # handle concentration dataset
   conclist <- list()
 
-  print(Subject_ind)
 
 
 # hand evid
@@ -301,10 +302,10 @@ if(computeMedian == T){
 
 
 
-  subject_formula <- Subject_ind[[1]]
-  if(length(Subject) > 1) subject_formula <- paste0(subject_formula, "/", paste0(Subject[-1], collapse = "+"))
+  subject_formula <- Subject_ind[[1]] %>% as.character()
+  if(length(Subject) > 1) subject_formula <- paste0(subject_formula, "/", paste0(Subject_ind[-1], collapse = "+"))
 
-  conclist$formula <- expr(!!conc~!!Time|!!subject_formula)
+  conclist$formula <- expr(!!conc~!!Time|!!parse_expr(subject_formula))
 
   # handle dose dataset
   # if is na dose, just say dose 0 at time 0
@@ -315,7 +316,7 @@ if(computeMedian == T){
   if(is.na(EVID)){
 
     doselist$data <- expr(!!dataset2 %>%
-                            group_by(!!!Subject) %>%
+                            group_by(!!!Subject_ind) %>%
                             slice(1) %>%
                             mutate(!!Time:=0, !!conc:=0 )
     )
@@ -338,7 +339,7 @@ if(computeMedian == T){
   }
 
 
-  doselist$formula <- expr( !!dose~!!Time|!!subject_formula)
+  doselist$formula <- expr( !!dose~!!Time|!!parse_expr(subject_formula))
 
 
 
@@ -415,11 +416,15 @@ if(!is.na(route)){
   })
 
 
+  # search cov
+ covexpr <-  expr(pecc_search_cov(!!dataset2, !!!Subject_ind, returnExp = T))
+
   if(AUC0_x == 0){
   Indiv_table_expr <- expr( NCA_eval$result %>%
                               select(!!!Subject_ind,PPTESTCD,  PPORRES) %>%
                               distinct() %>% ## carefull with this distinct!
-                              spread(key = PPTESTCD, value = PPORRES))
+                              spread(key = PPTESTCD, value = PPORRES) %>%
+                              left_join(!!eval(covexpr)))
   }else{
 
 
@@ -428,15 +433,16 @@ if(!is.na(route)){
       left_join(
 
 
-        NCA_eval$result %>% filter(end != !!AUC0_x) %>% select(ID, PPTESTCD, PPORRES, end) %>% distinct() %>%
+        NCA_eval$result %>% filter(end != !!AUC0_x) %>% select(!!!Subject_ind, PPTESTCD, PPORRES, end) %>% distinct() %>%
           spread(key = PPTESTCD, value = PPORRES),
 
         NCA_eval$result %>%
           filter(end == !!AUC0_x) %>%
-          select(ID, PPORRES) %>%
+          select(!!!Subject_ind, PPORRES) %>%
           rename(!!parse_expr(paste0("AUC", AUC0_x)) := PPORRES)
 
-      )
+      ) %>%
+        left_join(!!eval(covexpr))
 
     )
 
@@ -468,45 +474,58 @@ return(eval(Indiv_table_expr))
 }
 
 #
-dataset <- read.table(file = "D:/Peccary_Annexe/Exemple_demo/DATA//Theoph.txt", header = T, na.strings = ".", sep = ";", dec = ".")
-# outputExpr = F
-# EVID = expr(EVID)
-# conc = expr(DV )
-# Subject = expr(ID)
-# Time = expr(TIME)
-# dose = expr(Dose)
-# route = "IV perf (rate)"
-# ratenumber = 0
+# dataset <- read.table(file = "D:/Peccary_Annexe/Exemple_demo/DATA//Theoph.txt", header = T, na.strings = ".", sep = ";", dec = ".")
+# # outputExpr = F
+# # EVID = expr(EVID)
+# # conc = expr(DV )
+# # Subject = expr(ID)
+# # Time = expr(TIME)
+# # dose = expr(Dose)
+# # route = "IV perf (rate)"
+# # ratenumber = 0
+# #
+# #
+# # # with auc0_24
+# #
+# peccary_pknca(dataset, Time = TIME, conc = DV, Subject = ID, AUC0_x = 24, outputExpr = "both")
+
+
+
 #
 #
-# # with auc0_24
+# peccary_pknca(dataset, Time = TIME, conc = DV, Subject = ID, AUC0_x = 0,route = "intravascular",rate = Wt, duration = 0,  outputExpr = "both")
+# #
+# #
+# #
+# # # without DOSE
+# #
+# peccary_pknca(dataset, Time = TIME, conc = DV, Subject = ID)
+# #
+# # # without EVID
+# #
+# # peccary_pknca(dataset, Time = TIME, conc = DV, Subject = ID, dose = Dose)
+# #
+# # # With both
+# #
+# # peccary_pknca(dataset, Time = TIME, conc = DV, Subject = ID, dose = Dose, EVID = EVID, computeMedian = F)
+# #
+# # # With rate
+# #
+# # peccary_pknca(dataset, Time = TIME, conc = DV, Subject = ID, dose = Dose, EVID = EVID,route = "intravascular",rate = 2,
+# #              computeMedian = F)
+# #
+# # # With
+# #
+# #
+# # a <- peccary_pknca(dataset, Time = TIME, conc = DV, Subject = ID, dose = Dose, EVID = EVID )
+# #
+# # a
+# #
+# #
 #
-# peccar_pknca(dataset, Time = TIME, conc = DV, Subject = ID, AUC0_x = 0, outputExpr = "both")
-#
-#
-#
-# # without DOSE
-#
-# peccar_pknca(dataset, Time = TIME, conc = DV, Subject = ID)
-#
-# # without EVID
-#
-# peccar_pknca(dataset, Time = TIME, conc = DV, Subject = ID, dose = Dose)
-#
-# # With both
-#
-# peccar_pknca(dataset, Time = TIME, conc = DV, Subject = ID, dose = Dose, EVID = EVID, computeMedian = F)
-#
-# # With rate
-#
-# peccar_pknca(dataset, Time = TIME, conc = DV, Subject = ID, dose = Dose, EVID = EVID,route = "intravascular",rate = 2,
-#              computeMedian = F)
-#
-# # With
-#
-#
-# a <- peccar_pknca(dataset, Time = TIME, conc = DV, Subject = ID, dose = Dose, EVID = EVID )
-#
-# a
-#
-#
+# dose_obj <- PKNCAdose(data = dataset %>% group_by(ID + cov) %>%
+#                         slice(1) %>% mutate(`:=`(TIME, 0), `:=`(DV,
+#                                                                 0)) %>% mutate(dosenull = 0), formula = dosenull ~ TIME |
+#                         ID/cov)
+
+# peccary_pknca(demoDF, TIME, DV, ID + cov,EVID = EVID, dose = Dose, computeMedian = F,  outputExpr = "both")
