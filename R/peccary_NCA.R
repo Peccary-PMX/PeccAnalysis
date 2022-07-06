@@ -247,7 +247,22 @@ if(outputExpr == T)return( NCAexpr)
 
 
 
-#'
+#' PKNCA helper
+#' @author Thibaud Derippe (\email{Thibaud.Derippe@@gmail.com})
+#' @description \code{peccary_NCA} compute basic NCA analysis (no extrapolation)
+#' @param dataset Dataset to analyze
+#' @param Time The name (unquoted) of the time column. Mandatory.
+#' @param conc  The name  (unquoted) of the observation column. Mandatory.
+#' @param Subject     All the names (unquoted) of the grouping column separated by "+"  (ID, YTYPE, nAdmin, any covariate....).
+#' @param dose Name of the dose column (unquoted)
+#' @param EVID  The name  (unquoted) of the evid column. Optional. Only line with evidcol = 0 will be kept
+#' @param AUC0_x Numeric input. Compute AUC from time 0 to time auc_0_X
+#' @param computeMedian Compute median of profile per Subject combination and time (avoid computational error)
+#' @param route  Optionnal, either "intravascular" or "extravascular"
+#' @param rate  Either name of the perfusion rate column or a number other of 0 for perf
+#' @param duration  Either name of the perfusion duration column or a number other of 0 for perf
+#' @param option List of options to input in PKNCa, see their documentations
+#' @param outputExpr Output the expression (T), the result (F) or both ("Both")
 #' @export
 
 peccary_pknca <- function(dataset,Time, conc, Subject, dose = NA, EVID = NA, AUC0_x = 0, computeMedian = T,  route = NA, rate = 0, duration = 0, option = NA, outputExpr = F){

@@ -1,6 +1,18 @@
 
 #' Correlation simplified creation
 #' @author Thibaud Derippe (\email{Thibaud.Derippe@@gmail.com})
+#' @param df name of the dataset to analyze
+#' @param x name of the X variable
+#' @param ... names of the y variables (one per wrapped subplot)
+#' @param ylog y logarithmic scale
+#' @param xlox x logarithmic scale
+#' @param add  By default "reg.line", see ggpubr ("none"," "reg.line", "loess")
+#' @param cor.coef To display correlation coeficient or not
+#' @param cor.method Correlation method to use ("pearson", "spearman" or "kendall")
+#' @param conf.int Toggle or not confidence interval
+#' @param outputExpr display the R inependent code (T) or its evaluation (F)
+#' @param colwrap column to wrap, if "..." is of length one only
+#' @param  wrapscale Scale for wrapping (ggplot syntax)
 #' @export
 #'
 

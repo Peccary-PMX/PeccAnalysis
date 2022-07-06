@@ -10,6 +10,8 @@ pecc_search_cov(dataset, ..., returnExp = F)
 \item{dataset}{dataset to analyze}
 
 \item{...}{grouping columns (ID, occasion,...)}
+
+\item{returnExp}{If F (default) return the output (simplified df), if not the corresponding R code}
 }
 \description{
 \code{pecc_search_cov} simplify a dataset to extract only covariates

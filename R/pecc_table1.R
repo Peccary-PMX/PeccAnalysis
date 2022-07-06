@@ -1,6 +1,6 @@
 #' Table1 creation
 #' @author Thibaud Derippe (\email{Thibaud.Derippe@@gmail.com})
-#' @description \code{peccary_NCA} compute basic NCA analysis (no extrapolation)
+#' @description  Re compute table1 from sratch
 #' @param dataset dataset to analysis
 #' @param rowl vector of dataset column names (quoted) with addition of _cont ("X_cont") or _cat ("X_cat") to force to consider a numeric column into a categorical one
 #' @param ... columns (generally ID, unquoted) used to reduce the dataset. "..." integrated into pecc_search_cov(...) function.
@@ -226,6 +226,16 @@ temp <- map_dfr(temp, function(x){
 
 # pecc_table1(mtcars, ..., rowl = c("mpg_cont", "gear_cont", "gear_cat"), col1 = NA, col2 = NA)
 
+#' Table1 packagecreation
+#'
+#' @author Thibaud Derippe (\email{Thibaud.Derippe@@gmail.com})
+#' @description  Re compute table1 from sratch
+#' @param df dataset to analyze
+#' @param ... name of the columns to analyze, optionally with "_cont" or "_cat" to force a continuous or categorical behavior. If ... is empty, analyze every columns (using reduce by to extract ID).
+#' @param col1 optional name of a categorical covariate to use as first column
+#' @param col2 optional name of a categorical covariate to use as second column
+#' @param reduceBy optional name of the columns to reduce the dataset by, separeated by "+"  (eg ID + occ)
+#' @param outputExpr If F return directly the table1 output, if "Both" return both the code and its evaluation, else return only the code
 #' @export
 
 pecc_table1_original <- function(df, ..., col1 = NA, col2 = NA,  reduceBy = NA,  outputExpr = F){

@@ -33,7 +33,7 @@ pecc_table1(
 \item{round}{number of digit displayed}
 }
 \description{
-\code{peccary_NCA} compute basic NCA analysis (no extrapolation)
+Re compute table1 from sratch
 }
 \examples{
 pecc_table1(mtcars, rowl = c("mpg_cont", "gear_cont", "gear_cat"), coll = "cyl")

@@ -20,6 +20,31 @@ plot_correlation(
   caption = F
 )
 }
+\arguments{
+\item{df}{name of the dataset to analyze}
+
+\item{x}{name of the X variable}
+
+\item{...}{names of the y variables (one per wrapped subplot)}
+
+\item{ylog}{y logarithmic scale}
+
+\item{add}{By default "reg.line", see ggpubr ("none"," "reg.line", "loess")}
+
+\item{cor.coef}{To display correlation coeficient or not}
+
+\item{cor.method}{Correlation method to use ("pearson", "spearman" or "kendall")}
+
+\item{conf.int}{Toggle or not confidence interval}
+
+\item{outputExpr}{display the R inependent code (T) or its evaluation (F)}
+
+\item{colwrap}{column to wrap, if "..." is of length one only}
+
+\item{wrapscale}{Scale for wrapping (ggplot syntax)}
+
+\item{xlox}{x logarithmic scale}
+}
 \description{
 Correlation simplified creation
 }

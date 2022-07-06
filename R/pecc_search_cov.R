@@ -3,12 +3,11 @@
 #' @description \code{pecc_search_cov} simplify a dataset to extract only covariates
 #' @param dataset dataset to analyze
 #' @param ... grouping columns (ID, occasion,...)
+#' @param returnExp If F (default) return the output (simplified df), if not the corresponding R code
 #' @examples
 #' pecc_search_cov(Theoph, Subject)
 #' @export
-# pecc_search_cov(Theoph, Subject)
-# dataset <- as.tibble(Theoph)
-# key <- exprs(Subject)
+
 pecc_search_cov <- function(dataset, ..., returnExp = F){
 
 namedataset <- enexpr(dataset)
